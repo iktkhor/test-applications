@@ -1,12 +1,14 @@
 package com.example.geoquiz
 
-import android.support.v7.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.ViewModelProviders
 
 private const val TAG = "MainActivity"
 
@@ -18,6 +20,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prevButton: Button
     private lateinit var questionTextView: TextView
 
+    private lateinit var quizViewModel: QuizViewModel
+
     private val questionBank = listOf(
         Question(R.string.question_australia, true),
         Question(R.string.question_oceans, true),
@@ -26,12 +30,17 @@ class MainActivity : AppCompatActivity() {
         Question(R.string.question_americas, true),
         Question(R.string.question_asia, true))
 
+    private var is_answered = Array(questionBank.size, {false})
+
     private var currentIndex = 0
+    private var correctAnswers = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate(Bundle?) called")
         setContentView(R.layout.activity_main)
+
+        quizViewModel = ViewModelProvider(this).get()
 
         trueButton = findViewById(R.id.true_button)
         falseButton = findViewById(R.id.false_button)
@@ -41,10 +50,14 @@ class MainActivity : AppCompatActivity() {
 
         trueButton.setOnClickListener {
             checkAnswer(true)
+            is_answered[currentIndex] = true
+            updateQuestion()
         }
 
         falseButton.setOnClickListener {
             checkAnswer(false)
+            is_answered[currentIndex] = true
+            updateQuestion()
         }
 
         nextButton.setOnClickListener {
@@ -91,12 +104,21 @@ class MainActivity : AppCompatActivity() {
     private fun updateQuestion() {
         val questionTextResId = questionBank[currentIndex].textResId
         questionTextView.setText(questionTextResId)
+
+        if (!is_answered[currentIndex]) {
+            falseButton.isEnabled = true
+            trueButton.isEnabled = true
+        } else {
+            falseButton.isEnabled = false
+            trueButton.isEnabled = false
+        }
     }
 
     private fun checkAnswer(userAnswer: Boolean) {
         val correctAnswer = questionBank[currentIndex].answer
 
         val messageResId = if (userAnswer == correctAnswer) {
+            correctAnswers++
             R.string.correct_toast
         } else {
             R.string.incorrect_toast
